@@ -1,30 +1,42 @@
-mport streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+import streamlit as st
+import requests
+from openweathermapy import utils, core
+
+def get_weather(api_key, city):
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        'q': city,
+        'appid': api_key,
+        'units': 'metric'  # 온도를 섭씨로 받아옴
+    }
+
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    return data
 
 def main():
-    st.title("데이터 시각화 및 파일 업로드")
+    st.title("날씨 정보 애플리케이션")
 
-    # 파일 업로드
-    uploaded_file = st.file_uploader("CSV 파일을 업로드하세요.", type="csv")
+    # 사용자로부터 API 키 입력 받기
+    api_key = st.text_input("OpenWeatherMap API 키를 입력하세요:")
 
-    if uploaded_file is not None:
-        # 업로드된 파일을 DataFrame으로 읽기
-        df = pd.read_csv(uploaded_file)
+    # 사용자로부터 도시 입력 받기
+    city = st.text_input("날씨 정보를 확인할 도시를 입력하세요:")
 
-        # 데이터 프레임 출력
-        st.write("업로드된 데이터 프레임:", df)
+    if st.button("날씨 정보 가져오기"):
+        if api_key and city:
+            try:
+                weather_data = get_weather(api_key, city)
 
-        # 데이터 프레임의 기본 통계 정보 출력
-        st.write("데이터 프레임의 기본 통계 정보:", df.describe())
-
-        # 선택한 컬럼의 히스토그램 그리기
-        selected_column = st.selectbox("히스토그램을 그릴 컬럼 선택:", df.columns)
-        plt.figure(figsize=(8, 6))
-        sns.histplot(df[selected_column], bins=20, kde=True)
-        st.pyplot()
+                # 가져온 데이터 출력
+                st.write(f"{city}의 현재 날씨 정보:")
+                st.write(f"온도: {weather_data['main']['temp']}°C")
+                st.write(f"습도: {weather_data['main']['humidity']}%")
+                st.write(f"날씨: {weather_data['weather'][0]['description']}")
+            except Exception as e:
+                st.error(f"날씨 정보를 가져오는 도중 오류가 발생했습니다: {e}")
+        else:
+            st.warning("API 키와 도시를 입력해주세요.")
 
 if __name__ == "__main__":
     main()
